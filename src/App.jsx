@@ -153,6 +153,28 @@ select option{background:#1A1510}
   .hide-sm{display:none!important}
   .stack-sm{flex-direction:column!important}
   .full-sm{width:100%!important;grid-column:1/-1!important}
+  .logo-title{font-size:16px!important}
+  .loc-btn{font-size:10px!important;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clock-time{font-size:16px!important}
+  .clock-date{display:none!important}
+  .nav-btn{width:30px!important;height:30px!important;font-size:16px!important}
+  .hero-strip{flex-direction:column!important}
+  .hero-strip > div{flex:1 1 auto!important;width:100%!important}
+  .muhurta-row{grid-template-columns:1fr 1fr!important}
+  .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:3px!important;gap:2px!important}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab{padding:8px 6px!important;white-space:nowrap;min-width:52px!important}
+  .tab-label{display:none!important}
+  .tab-icon{font-size:18px!important;display:block!important;margin:0 auto}
+  main{padding:16px 12px 80px!important}
+  .fast-card-inner{flex-direction:column!important}
+  .fast-date-box{flex-direction:row!important;align-items:center!important;gap:12px!important;text-align:left!important}
+  .contact-grid{grid-template-columns:1fr!important}
+  .planet-grid{grid-template-columns:1fr!important}
+}
+@media(min-width:641px){
+  .tab-icon{display:none!important}
+  .tab-label{display:inline!important}
 }
 `;
 
@@ -571,6 +593,181 @@ function TabSummary({ d, date, delay }) {
 
 
 /* ─── Contact Tab ─────────────────────────────────────────── */
+
+/* ─── Fasting Tab ─────────────────────────────────────────── */
+const IMP_COLOR  = { Major:'#C8A96E', Moderate:'#9B7FD4', Minor:'#5A9EC4' };
+const IMP_BG     = { Major:'rgba(200,169,110,0.08)', Moderate:'rgba(155,127,212,0.08)', Minor:'rgba(90,158,196,0.08)' };
+const IMP_BORDER = { Major:'rgba(200,169,110,0.2)', Moderate:'rgba(155,127,212,0.2)', Minor:'rgba(90,158,196,0.2)' };
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function TabFasting({ loc, delay }) {
+  const today = new Date();
+  const [year,    setYear]    = React.useState(today.getFullYear());
+  const [month,   setMonth]   = React.useState(today.getMonth() + 1);
+  const [days,    setDays]    = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error,   setError]   = React.useState(null);
+
+  const load = React.useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const tz  = loc?.tz  || 'America/Chicago';
+      const lat = loc?.lat || 29.9941;
+      const lon = loc?.lon || -90.1788;
+      const base = process.env.REACT_APP_API_URL || '/api/v1/panchanga';
+      const url  = `${base}/fasting-days?year=${year}&month=${month}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}`;
+      const res  = await fetch(url, { headers:{ Accept:'application/json' } });
+      const data = await res.json();
+      setDays(data.data || []);
+    } catch(e) { setError(e.message); }
+    finally { setLoading(false); }
+  }, [year, month, loc]);
+
+  React.useEffect(() => { load(); }, [load]);
+
+  const shiftMonth = (n) => {
+    let m = month + n, y = year;
+    if (m > 12) { m = 1;  y++; }
+    if (m < 1)  { m = 12; y--; }
+    setMonth(m); setYear(y);
+  };
+
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  return (
+    <div className="reveal" style={{ animationDelay:`${delay}s` }}>
+
+      {/* Month navigation */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:10 }}>
+        <div>
+          <div style={{ fontFamily:'Cinzel', fontSize:20, color:'#C8A96E' }}>Fasting Calendar</div>
+          <div style={{ fontSize:12, color:'#6A5A4A', marginTop:3 }}>Ekadashi · Purnima · Amavasya · Pradosh & more</div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button onClick={() => shiftMonth(-1)} style={{ background:'rgba(200,169,110,0.1)',
+            border:'1px solid rgba(200,169,110,0.2)', color:'#C8A96E', borderRadius:10,
+            width:34, height:34, cursor:'pointer', fontSize:18, flexShrink:0 }}>‹</button>
+          <div style={{ fontFamily:'Cinzel', fontSize:14, color:'#E8DDD0', minWidth:130, textAlign:'center' }}>
+            {MONTHS[month-1]} {year}
+          </div>
+          <button onClick={() => shiftMonth(1)} style={{ background:'rgba(200,169,110,0.1)',
+            border:'1px solid rgba(200,169,110,0.2)', color:'#C8A96E', borderRadius:10,
+            width:34, height:34, cursor:'pointer', fontSize:18, flexShrink:0 }}>›</button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display:'flex', gap:16, marginBottom:18, flexWrap:'wrap' }}>
+        {Object.entries(IMP_COLOR).map(([k,v]) => (
+          <div key={k} style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:v }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:v, flexShrink:0 }}/>
+            {k}
+          </div>
+        ))}
+      </div>
+
+      {/* Loading skeletons */}
+      {loading && [1,2,3,4].map(i => <div key={i} className="skel" style={{ height:90, marginBottom:10 }}/>)}
+
+      {/* Error */}
+      {error && !loading && (
+        <div style={{ background:'rgba(224,82,82,0.1)', border:'1px solid rgba(224,82,82,0.2)',
+          borderRadius:12, padding:20, textAlign:'center', color:'#E07070', fontSize:13 }}>
+          Could not load fasting days. Make sure the API is running.
+        </div>
+      )}
+
+      {/* Empty */}
+      {!loading && !error && days.length === 0 && (
+        <div style={{ textAlign:'center', padding:'40px 20px', color:'#6A5A4A', fontSize:13 }}>
+          No major fasting days found for this month.
+        </div>
+      )}
+
+      {/* Fasting day cards */}
+      {!loading && !error && days.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {days.map((d, i) => {
+            const isToday = d.date === todayStr;
+            const isPast  = d.date < todayStr;
+            const color   = IMP_COLOR[d.importance]  || '#888';
+            const bg      = IMP_BG[d.importance]     || 'rgba(255,255,255,0.03)';
+            const border  = IMP_BORDER[d.importance] || 'rgba(255,255,255,0.07)';
+            const dateObj = new Date(d.date + 'T12:00:00');
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday:'short' });
+            const hasTime = d.startTime || d.endTime;
+            return (
+              <div key={i} style={{ background:bg, borderRadius:14,
+                border:`1px solid ${isToday ? color : border}`,
+                borderLeft:`4px solid ${color}`,
+                opacity: isPast && !isToday ? 0.5 : 1,
+                padding:'14px 16px' }}>
+
+                {/* Card inner — responsive flex */}
+                <div className="fast-card-inner" style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+
+                  {/* Left: details */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5, flexWrap:'wrap' }}>
+                      <div style={{ fontFamily:'Cinzel', fontSize:15, fontWeight:600, color }}>{d.fastingName}</div>
+                      {isToday && <span className="pill good" style={{ fontSize:9 }}>Today</span>}
+                      {isPast && !isToday && <span style={{ fontSize:10, color:'#4A3A2A' }}>Past</span>}
+                    </div>
+                    <div style={{ fontSize:12, color:'#8A7A6A', marginBottom:6 }}>
+                      {d.paksha} Paksha · {d.tithi} · {d.deity}
+                    </div>
+                    <div style={{ fontSize:12, color:'#6A8A6A', fontStyle:'italic', lineHeight:1.6 }}>
+                      {d.rules}
+                    </div>
+                    {/* Timing row */}
+                    {hasTime && (
+                      <div style={{ display:'flex', gap:16, marginTop:8, flexWrap:'wrap' }}>
+                        {d.startTime && (
+                          <div style={{ fontSize:11, color:'#A88A5A' }}>
+                            <span style={{ color:'#6A5A4A' }}>Begins </span>
+                            <span style={{ fontFamily:'DM Mono', color }}>{fmtFastTime(d.startTime)}</span>
+                          </div>
+                        )}
+                        {d.endTime && (
+                          <div style={{ fontSize:11, color:'#A88A5A' }}>
+                            <span style={{ color:'#6A5A4A' }}>Ends </span>
+                            <span style={{ fontFamily:'DM Mono', color }}>{fmtFastTime(d.endTime)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: date box */}
+                  <div className="fast-date-box" style={{ textAlign:'right', flexShrink:0 }}>
+                    <div style={{ fontFamily:'Cinzel', fontSize:24, color, fontWeight:700, lineHeight:1 }}>
+                      {dateObj.getDate()}
+                    </div>
+                    <div style={{ fontSize:11, color:'#8A7A6A', marginTop:2 }}>{dayName}</div>
+                    <div style={{ fontSize:10, color:'#4A3A2A' }}>{MONTHS[month-1].slice(0,3)}</div>
+                    <span className="pill" style={{ marginTop:6, display:'inline-flex',
+                      background:bg, color, border:`1px solid ${border}`, fontSize:9 }}>
+                      {d.importance}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Format fasting time: "prev day 18:43" → "prev day 6:43 PM", "19:21" → "7:21 PM"
+function fmtFastTime(t) {
+  if (!t) return '';
+  const prefix = t.startsWith('prev day') ? 'prev day ' : t.startsWith('next day') ? 'next day ' : '';
+  const time   = t.replace('prev day ', '').replace('next day ', '');
+  return prefix + fmtTime(time);
+}
+
 function TabContact({ delay }) {
   const FORMSPREE_URL = 'https://formspree.io/f/xykdqvng';
   const [form,   setForm]   = React.useState({ name:'', email:'', subject:'', message:'' });
@@ -635,7 +832,7 @@ function TabContact({ delay }) {
       {status !== 'success' && (
         <div className="card" style={{ padding:28 }}>
           <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="contact-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
               <div>
                 <label style={{ fontSize:11, color:'#8A7A6A', letterSpacing:1, textTransform:'uppercase', display:'block', marginBottom:6 }}>Name *</label>
                 <input type="text" value={form.name} style={inp('name')} placeholder="Your name"
@@ -772,6 +969,7 @@ export default function App() {
     { id:'today',   label:'Today',   icon:'🗓' },
     { id:'planets', label:'Planets', icon:'🪐' },
     { id:'summary', label:'Summary', icon:'📋' },
+    { id:'fasting', label:'Fasting', icon:'🙏' },
     { id:'contact', label:'Contact', icon:'✉' },
   ];
 
@@ -861,7 +1059,7 @@ export default function App() {
 
       {/* ── HERO STRIP ─────────────────────────────────────── */}
       {!locLoading && <div style={{ maxWidth:1100,margin:'14px auto 0',padding:'0 20px' }}>
-        <div style={{ display:'flex',gap:14,flexWrap:'wrap' }}>
+        <div className="hero-strip" style={{ display:'flex',gap:14,flexWrap:'wrap' }}>
 
           {/* Score */}
           <div className="card" style={{ padding:'20px 24px',display:'flex',
@@ -958,7 +1156,8 @@ export default function App() {
           {TABS.map(t => (
             <button key={t.id} className={`tab ${tab===t.id?'active':''}`}
               onClick={() => setTab(t.id)}>
-              {t.icon} {t.label}
+              <span className="tab-icon">{t.icon}</span>
+              <span className="tab-label">{t.icon} {t.label}</span>
             </button>
           ))}
         </div>
@@ -1021,6 +1220,7 @@ export default function App() {
 
         {/* Tab content */}
         {!locLoading && tab === 'contact' && <TabContact delay={0.05}/>}
+        {!locLoading && tab === 'fasting' && <TabFasting loc={loc} delay={0.05}/>}
         {!locLoading && !loading && !error && data && (
           <>
             {tab === 'today'   && <TabToday   d={data} delay={0.05}/>}
@@ -1031,8 +1231,7 @@ export default function App() {
       </main>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-     
-  <footer style={{ textAlign:'center',padding:'20px',
+      <footer style={{ textAlign:'center',padding:'20px',
         borderTop:'1px solid rgba(255,255,255,0.05)',color:'#3A2A1A',fontSize:11,letterSpacing:1 }}>
         Rajesh Padmakumaran · New Orleans ·{' '}
         <a href="#" onClick={(e) => { e.preventDefault(); setTab('contact'); window.scrollTo(0,0); }} style={{ color:'#C8A030', textDecoration:'none', cursor:'pointer' }}>Contact</a>
