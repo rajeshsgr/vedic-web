@@ -10,6 +10,7 @@ const fmt = d => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
+
 const fetchPanchanga = (date, loc) =>
   API.get('/daily', {
     params: { date: fmt(date), lat: loc.lat, lon: loc.lon, timezone: loc.tz, location: loc.name }
@@ -568,6 +569,125 @@ function TabSummary({ d, date, delay }) {
   );
 }
 
+
+/* ─── Contact Tab ─────────────────────────────────────────── */
+function TabContact({ delay }) {
+  const FORMSPREE_URL = 'https://formspree.io/f/xykdqvng';
+  const [form,   setForm]   = React.useState({ name:'', email:'', subject:'', message:'' });
+  const [status, setStatus] = React.useState('idle');
+  const [errors, setErrors] = React.useState({});
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name is required';
+    if (!form.email.match(/^[^@]+@[^@]+\.[^@]+$/)) e.email = 'Valid email required';
+    if (!form.message.trim()) e.message = 'Message is required';
+    return e;
+  };
+
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({});
+    setStatus('sending');
+    try {
+      const res = await fetch(FORMSPREE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (res.ok) { setStatus('success'); setForm({ name:'', email:'', subject:'', message:'' }); }
+      else setStatus('error');
+    } catch { setStatus('error'); }
+  };
+
+  const inp = (field) => ({
+    background:'rgba(255,255,255,0.05)',
+    border:`1px solid ${errors[field] ? '#E05252' : 'rgba(255,255,255,0.1)'}`,
+    color:'#E8DDD0', borderRadius:12, padding:'12px 16px', width:'100%',
+    fontFamily:'DM Sans,sans-serif', fontSize:14, outline:'none', boxSizing:'border-box'
+  });
+
+  return (
+    <div className="reveal" style={{ maxWidth:600, margin:'0 auto', animationDelay:`${delay}s` }}>
+      <div style={{ textAlign:'center', marginBottom:32 }}>
+        <div style={{ fontSize:40, marginBottom:12 }}>&#9993;</div>
+        <div style={{ fontFamily:'Cinzel', fontSize:22, color:'#C8A96E', marginBottom:8 }}>Get in Touch</div>
+        <div style={{ fontSize:13, color:'#6A5A4A', lineHeight:1.7 }}>
+          Questions about Vedic astrology, feedback on the app, or just want to say hello.
+        </div>
+      </div>
+
+      {status === 'success' && (
+        <div style={{ background:'rgba(82,168,82,0.1)', border:'1px solid rgba(82,168,82,0.25)',
+          borderRadius:16, padding:24, textAlign:'center', marginBottom:24 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>&#128591;</div>
+          <div style={{ fontFamily:'Cinzel', fontSize:16, color:'#72C872', marginBottom:6 }}>Message Received</div>
+          <div style={{ fontSize:13, color:'#A8C8A8' }}>Thank you for writing in. I will get back to you soon.</div>
+          <button onClick={() => setStatus('idle')} style={{ marginTop:16, background:'none',
+            border:'1px solid rgba(82,168,82,0.3)', color:'#72C872', borderRadius:10,
+            padding:'8px 20px', cursor:'pointer', fontFamily:'DM Sans', fontSize:13 }}>
+            Send another message
+          </button>
+        </div>
+      )}
+
+      {status !== 'success' && (
+        <div className="card" style={{ padding:28 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <div>
+                <label style={{ fontSize:11, color:'#8A7A6A', letterSpacing:1, textTransform:'uppercase', display:'block', marginBottom:6 }}>Name *</label>
+                <input type="text" value={form.name} style={inp('name')} placeholder="Your name"
+                  onChange={e => setForm(f => ({ ...f, name:e.target.value }))}/>
+                {errors.name && <div style={{ fontSize:11, color:'#E05252', marginTop:4 }}>{errors.name}</div>}
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:'#8A7A6A', letterSpacing:1, textTransform:'uppercase', display:'block', marginBottom:6 }}>Email *</label>
+                <input type="email" value={form.email} style={inp('email')} placeholder="your@email.com"
+                  onChange={e => setForm(f => ({ ...f, email:e.target.value }))}/>
+                {errors.email && <div style={{ fontSize:11, color:'#E05252', marginTop:4 }}>{errors.email}</div>}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize:11, color:'#8A7A6A', letterSpacing:1, textTransform:'uppercase', display:'block', marginBottom:6 }}>Subject</label>
+              <select value={form.subject} style={inp('subject')}
+                onChange={e => setForm(f => ({ ...f, subject:e.target.value }))}>
+                <option value="">Select a topic...</option>
+                <option value="Feedback">Feedback on the app</option>
+                <option value="Astrology Question">Astrology question</option>
+                <option value="Bug Report">Bug report</option>
+                <option value="Feature Request">Feature request</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:11, color:'#8A7A6A', letterSpacing:1, textTransform:'uppercase', display:'block', marginBottom:6 }}>Message *</label>
+              <textarea value={form.message} style={{ ...inp('message'), height:140, resize:'vertical' }}
+                placeholder="What is on your mind?"
+                onChange={e => setForm(f => ({ ...f, message:e.target.value }))}/>
+              {errors.message && <div style={{ fontSize:11, color:'#E05252', marginTop:4 }}>{errors.message}</div>}
+            </div>
+            {status === 'error' && (
+              <div style={{ background:'rgba(224,82,82,0.1)', border:'1px solid rgba(224,82,82,0.25)',
+                borderRadius:10, padding:'10px 14px', fontSize:13, color:'#E07070' }}>
+                Something went wrong. Please try again.
+              </div>
+            )}
+            <button onClick={handleSubmit} disabled={status === 'sending'}
+              style={{ background:status==='sending'?'rgba(200,169,110,0.08)':'rgba(200,169,110,0.15)',
+                border:'1px solid rgba(200,169,110,0.3)', color:'#C8A96E', borderRadius:12,
+                padding:13, cursor:status==='sending'?'not-allowed':'pointer',
+                fontFamily:'Cinzel', fontSize:15, fontWeight:600, width:'100%' }}>
+              {status === 'sending' ? '&#10022; Sending...' : '&#10022; Send Message'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main App ────────────────────────────────────────────── */
 export default function App() {
   const [date,    setDate]    = useState(new Date());
@@ -652,6 +772,7 @@ export default function App() {
     { id:'today',   label:'Today',   icon:'🗓' },
     { id:'planets', label:'Planets', icon:'🪐' },
     { id:'summary', label:'Summary', icon:'📋' },
+    { id:'contact', label:'Contact', icon:'✉' },
   ];
 
   return (
@@ -899,6 +1020,7 @@ export default function App() {
         )}
 
         {/* Tab content */}
+        {!locLoading && tab === 'contact' && <TabContact delay={0.05}/>}
         {!locLoading && !loading && !error && data && (
           <>
             {tab === 'today'   && <TabToday   d={data} delay={0.05}/>}
