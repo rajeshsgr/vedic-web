@@ -3,8 +3,13 @@ import axios from 'axios';
 
 /* ─── API ─────────────────────────────────────────────────── */
 const API = axios.create({ baseURL: process.env.REACT_APP_API_URL || '/api/v1/panchanga', timeout: 12000 });
-const fmt = d => d.toISOString().split('T')[0];
-
+const fmt = d => {
+  // Use local date parts — toISOString() converts to UTC which can shift the day
+  const y   = d.getFullYear();
+  const m   = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 const fetchPanchanga = (date, loc) =>
   API.get('/daily', {
     params: { date: fmt(date), lat: loc.lat, lon: loc.lon, timezone: loc.tz, location: loc.name }
