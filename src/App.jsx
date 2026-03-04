@@ -876,7 +876,8 @@ function TabContact({ delay }) {
                 border:'1px solid rgba(200,169,110,0.3)', color:'#C8A96E', borderRadius:12,
                 padding:13, cursor:status==='sending'?'not-allowed':'pointer',
                 fontFamily:'Cinzel', fontSize:15, fontWeight:600, width:'100%' }}>
-              {status === 'sending' ? '&#10022; Sending...' : '&#10022; Send Message'}
+              {status === 'sending' ? '✦ Sending...' : '✦ Send Message'}
+
             </button>
           </div>
         </div>
